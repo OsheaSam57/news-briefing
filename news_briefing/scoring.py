@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
 import sqlite3
 
 from anthropic import Anthropic
 
 from news_briefing.db import mark_article_scored
+from news_briefing.llm_json import extract_json_object
 
 
 def score_articles(
@@ -67,7 +67,7 @@ Content excerpt: {article["raw_content"][:4000] if article["raw_content"] else "
         messages=[{"role": "user", "content": prompt}],
     )
     payload = _extract_text(response)
-    return json.loads(payload)
+    return extract_json_object(payload)
 
 
 def _extract_text(response) -> str:
