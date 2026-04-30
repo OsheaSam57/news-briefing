@@ -22,7 +22,7 @@ def score_articles(
         result = _score_article(client, model, article)
         score = int(result["score"])
         rationale = result["rationale"].strip()
-        status = "approved" if score >= 6 else "rejected"
+        status = "approved" if score >= 7 else "rejected"
 
         mark_article_scored(connection, article["id"], score, rationale, status)
 

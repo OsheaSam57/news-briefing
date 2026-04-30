@@ -15,9 +15,12 @@ def render_digest(articles: list[sqlite3.Row], output_path: Path) -> None:
     grouped_articles: dict[str, list[dict]] = {}
     if not dataframe.empty:
         dataframe = dataframe.sort_values(
-            by=["domain", "score", "created_at"],
-            ascending=[True, False, True],
+            by=["domain", "source", "score", "created_at"],
+            ascending=[True, True, False, True],
         )
+
+        dataframe = dataframe.groupby(["domain", "source"], sort=False).head(4)
+
         grouped_articles = {
             domain: frame.to_dict(orient="records")
             for domain, frame in dataframe.groupby("domain", sort=False)
