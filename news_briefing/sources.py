@@ -13,7 +13,9 @@ FEED_CATEGORIES = {
         {"name": "The Actuary", "url": "https://www.theactuary.com/rss.xml"},
     ],
     "Economics/Markets": [
-        {"name": "Reuters Business", "url": "https://feeds.reuters.com/reuters/businessNews"},
+        {"name": "BBC Business", "url": "https://feeds.bbci.co.uk/news/business/rss.xml"},
+        {"name": "MarketWatch", "url": "https://feeds.content.dowjones.io/public/rss/mw_realtimeheadlines"},
+        {"name": "The Economist Finance", "url": "https://www.economist.com/finance-and-economics/rss.xml"},
         {"name": "FT Alphaville", "url": "https://www.ft.com/alphaville?format=rss"},
     ],
 }

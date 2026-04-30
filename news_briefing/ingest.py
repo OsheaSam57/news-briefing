@@ -22,6 +22,9 @@ def ingest_feeds(max_articles_per_feed: int) -> list[dict]:
             response = session.get(feed["url"], timeout=20)
             response.raise_for_status()
             parsed_feed = feedparser.parse(response.content)
+            if not parsed_feed.entries:
+                detail = getattr(parsed_feed, "bozo_exception", "no entries found")
+                raise ValueError(f"{feed['name']} returned no RSS entries: {detail}")
 
             for entry in parsed_feed.entries[:max_articles_per_feed]:
                 url = entry.get("link")
