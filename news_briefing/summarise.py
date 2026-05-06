@@ -86,11 +86,13 @@ def summarise_articles(
 
     for article in articles:
         result = _summarise_article(client, model, article)
+        summary = _normalise_summary(result.get("summary"), article)
+        insurance_callout = _normalise_optional_text(result.get("insurance_callout"))
         save_summary(
             connection,
             article["id"],
-            result["summary"].strip(),
-            (result.get("insurance_callout") or "").strip() or None,
+            summary,
+            insurance_callout,
         )
         summarised += 1
 
@@ -132,6 +134,29 @@ def _get_optional(article: sqlite3.Row | Mapping[str, Any], key: str) -> Any:
     if isinstance(article, sqlite3.Row):
         return article[key] if key in article.keys() else None
     return article.get(key)
+
+
+def _normalise_summary(value: Any, article: sqlite3.Row | Mapping[str, Any]) -> str:
+    summary = _normalise_optional_text(value)
+    if summary:
+        return summary
+
+    article_id = _get_optional(article, "id")
+    title = _get_optional(article, "title") or "Untitled article"
+    print(f"Warning: summariser returned no summary for article {article_id}: {title}")
+
+    fallback = _normalise_optional_text(_get_optional(article, "raw_summary"))
+    if fallback:
+        return fallback
+    return str(title).strip()
+
+
+def _normalise_optional_text(value: Any) -> str | None:
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    return text or None
 
 
 def _extract_text(response) -> str:
