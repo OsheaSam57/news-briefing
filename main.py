@@ -4,7 +4,6 @@ import sys
 
 from news_briefing.config import load_settings
 from news_briefing.db import (
-    fetch_articles_for_summary,
     fetch_digest_articles,
     fetch_unprocessed_articles,
     get_connection,
@@ -40,13 +39,12 @@ def main() -> int:
             settings.anthropic_api_key,
             settings.anthropic_model,
         )
-        print(f"Approved {approved} articles and rejected {rejected}.")
+        print(f"Approved {len(approved)} articles and rejected {len(rejected)}.")
 
         print("Summarising approved articles...")
-        approved_articles = fetch_articles_for_summary(connection)
         summarised = summarise_articles(
             connection,
-            approved_articles,
+            approved,
             settings.anthropic_api_key,
             settings.anthropic_model,
         )
