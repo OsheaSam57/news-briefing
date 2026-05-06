@@ -6,7 +6,7 @@ Personal AI-powered news briefing pipeline that ingests RSS feeds, scores them w
 
 - Pulls RSS stories across AI/ML, Data Science, Insurance/Actuarial, and Economics/Markets
 - Stores raw article metadata in SQLite with URL deduplication
-- Uses Anthropic to score relevance from 1 to 10 and drops articles below 6
+- Uses Anthropic to score relevance from 1 to 10 and keeps the top 3 articles per source
 - Summarises qualifying articles and adds an automotive protection / GAP insurance callout for Economics/Markets stories
 - Renders the final digest to `output/digest.html`
 - Includes a daily GitHub Actions schedule at `07:00 UTC`

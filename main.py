@@ -39,7 +39,7 @@ def main() -> int:
             settings.anthropic_api_key,
             settings.anthropic_model,
         )
-        print(f"Approved {len(approved)} articles and rejected {len(rejected)}.")
+        print(f"Selected {len(approved)} articles for summarisation and rejected {len(rejected)}.")
 
         print("Summarising approved articles...")
         summarised = summarise_articles(

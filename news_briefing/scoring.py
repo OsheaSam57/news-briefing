@@ -9,11 +9,16 @@ from news_briefing.db import save_score
 from news_briefing.llm_json import extract_json_object
 
 
-SYSTEM_PROMPT = """You are an expert editorial filter for a senior analyst and data scientist at a UK automotive
+ARTICLES_PER_SOURCE = 3
+
+
+SYSTEM_PROMPT = """You are an expert editorial ranker for a senior analyst and data scientist at a UK automotive
 protection and GAP insurance company. You have deep knowledge of the insurance industry,
 financial markets, AI/ML, and data science.
 
-Your job is to score articles by how genuinely useful they are to someone in this role.
+Your job is to rank articles by how genuinely useful they are to someone in this role.
+Do not be overly strict: even moderately relevant market, insurance, AI, or data science news
+can be useful when it is one of the stronger items from its source on a given day.
 Output valid JSON only."""
 
 
@@ -31,6 +36,16 @@ HIGH VALUE signals:
 - Practical data science methods: survival analysis, gradient boosting, time series, causal inference
 - LLM and agentic AI developments with enterprise or insurance applications
 - Macroeconomic indicators: inflation, consumer confidence, employment, vehicle sales volumes
+
+Scoring guidance:
+- Score from 1 to 10 to rank relative usefulness, not to decide whether the article is included.
+- Reserve 9 to 10 for direct, high-impact relevance to automotive protection, GAP insurance,
+  motor finance, motor insurance profitability, or practical insurance/data science work.
+- Use 6 to 8 for useful adjacent news that keeps the reader commercially or technically sharp.
+- Use 3 to 5 for general domain news with limited direct relevance but some situational value.
+- Use 1 to 2 only for spam, duplicate, pure promotion, or clearly off-topic items.
+- On a quiet news day, a score of 5 or 6 can still be worth reading if it is among the best
+  items available from that source.
 
 Return JSON only — no preamble, no markdown:
 {{
@@ -53,8 +68,7 @@ def score_articles(
     model: str,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     client = Anthropic(api_key=api_key)
-    approved: list[dict[str, Any]] = []
-    rejected: list[dict[str, Any]] = []
+    scored_articles: list[dict[str, Any]] = []
 
     for article in articles:
         result = _score_article(client, model, article)
@@ -62,27 +76,43 @@ def score_articles(
         reason = str(result["reason"]).strip()
         key_themes = _normalise_key_themes(result.get("key_themes", []))
         key_themes_text = ", ".join(key_themes)
-        status = "approved" if score >= 7 else "rejected"
-
-        save_score(connection, article["id"], score, reason, key_themes_text, status)
-
         scored_article = dict(article)
         scored_article.update(
             {
                 "score": score,
                 "reason": reason,
                 "key_themes": key_themes_text,
-                "status": status,
             }
         )
-        if status == "approved":
-            approved.append(scored_article)
-        else:
-            rejected.append(scored_article)
+        scored_articles.append(scored_article)
+
+    approved, rejected = _select_articles_for_digest(scored_articles)
+
+    for article in approved:
+        article["status"] = "approved"
+        save_score(
+            connection,
+            article["id"],
+            article["score"],
+            article["reason"],
+            article["key_themes"],
+            article["status"],
+        )
+
+    for article in rejected:
+        article["status"] = "rejected"
+        save_score(
+            connection,
+            article["id"],
+            article["score"],
+            article["reason"],
+            article["key_themes"],
+            article["status"],
+        )
 
     print(
-        f"Scored {len(articles)} articles: {len(approved)} passed the threshold, "
-        f"{len(rejected)} rejected."
+        f"Scored {len(articles)} articles: selected {len(approved)} for the digest "
+        f"as the top {ARTICLES_PER_SOURCE} per source, rejected {len(rejected)}."
     )
     return approved, rejected
 
@@ -117,6 +147,31 @@ def _normalise_key_themes(value: Any) -> list[str]:
         if text:
             themes.append(text)
     return themes
+
+
+def _select_articles_for_digest(
+    articles: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    grouped_articles: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for article in articles:
+        grouped_articles.setdefault((article["domain"], article["source"]), []).append(article)
+
+    approved_ids: set[int] = set()
+    for group in grouped_articles.values():
+        ranked_group = sorted(
+            group,
+            key=lambda article: (
+                int(article["score"]),
+                str(article["published"] or ""),
+                int(article["id"]),
+            ),
+            reverse=True,
+        )
+        approved_ids.update(article["id"] for article in ranked_group[:ARTICLES_PER_SOURCE])
+
+    approved = [article for article in articles if article["id"] in approved_ids]
+    rejected = [article for article in articles if article["id"] not in approved_ids]
+    return approved, rejected
 
 
 def _extract_text(response) -> str:
