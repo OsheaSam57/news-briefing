@@ -19,7 +19,7 @@ def render_digest(articles: list[sqlite3.Row], output_path: Path) -> None:
             ascending=[True, True, False, True],
         )
 
-        dataframe = dataframe.groupby(["domain", "source"], sort=False).head(4)
+        dataframe = dataframe.groupby(["domain", "source"], sort=False).head(3)
 
         grouped_articles = {
             domain: frame.to_dict(orient="records")
