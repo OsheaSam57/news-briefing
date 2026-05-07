@@ -9,6 +9,7 @@ Personal AI-powered news briefing pipeline that ingests RSS feeds, scores them w
 - Uses Anthropic to score relevance from 1 to 10 and keeps the top 3 articles per source
 - Summarises qualifying articles and adds an automotive protection / GAP insurance callout for Economics/Markets stories
 - Renders the final digest to `output/digest.html`
+- Emails the rendered digest as an HTML attachment when SMTP secrets are configured
 - Includes a daily GitHub Actions schedule at `07:00 UTC`
 
 ## First run
@@ -31,6 +32,25 @@ python main.py
 
 If the run succeeds, the digest will be written to `output/digest.html` and the SQLite database will be created at `data/news_briefing.db`.
 
+To send the generated digest as an email attachment locally, populate the SMTP settings in `.env` and run:
+
+```bash
+python -m news_briefing.email_delivery
+```
+
 ## GitHub Actions
 
-Add `ANTHROPIC_API_KEY` as a repository secret before enabling the scheduled workflow.
+Add these repository secrets before enabling the scheduled workflow:
+
+- `ANTHROPIC_API_KEY`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USERNAME`
+- `SMTP_PASSWORD`
+- `EMAIL_FROM`
+- `EMAIL_TO`
+
+Optional secrets:
+
+- `SMTP_STARTTLS` defaults to `true`
+- `EMAIL_SUBJECT` defaults to `Morning Briefing`

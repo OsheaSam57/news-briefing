@@ -29,7 +29,21 @@ jobs:
           ANTHROPIC_MODEL: claude-haiku-4-5
         run: python main.py
 
+      - name: Email digest
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_STARTTLS: ${{ secrets.SMTP_STARTTLS }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_SUBJECT: ${{ secrets.EMAIL_SUBJECT }}
+          DIGEST_OUTPUT_PATH: output/digest.html
+        run: python -m news_briefing.email_delivery
+
       - name: Upload digest artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: digest-output
